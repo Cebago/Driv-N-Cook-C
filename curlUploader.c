@@ -1,6 +1,7 @@
 #include "prototype.h"
 
- 
+extern conf_file_t * globalConfRead; 
+
 int upload(const char * pathQR){
   CURL *curl;
   CURLcode res;
@@ -18,14 +19,23 @@ int upload(const char * pathQR){
  
   curl = curl_easy_init();
   if(curl) {
+    
+    curl_easy_setopt(curl, CURLOPT_SSH_PUBLIC_KEYFILE, globalConfRead->public_keyfile);
+    curl_easy_setopt(curl, CURLOPT_SSH_PRIVATE_KEYFILE, globalConfRead->private_keyfile);
+    curl_easy_setopt(curl, CURLOPT_USERNAME, globalConfRead->user_ftp);
 
-    curl_easy_setopt(curl, CURLOPT_SSH_PUBLIC_KEYFILE, "keys/id_rsa.pub");
-    curl_easy_setopt(curl, CURLOPT_SSH_PRIVATE_KEYFILE, "keys/id_rsa");
-    curl_easy_setopt(curl, CURLOPT_USERNAME, "bdemarche");
-
-
+    char * url = malloc(sizeof(char)*200);
+    strcpy(url, globalConfRead->upload_protocol);
+    strcat(url, "://");
+    strcat(url, globalConfRead->ip_ftp);
+    strcat(url, ":");
+    strcat(url, globalConfRead->port_ftp);
+    strcat(url, globalConfRead->dest_path);
+    strcat(url, globalConfRead->output_name);
+    printf("Connecting to: %s\n", url);
     /* upload to this place */ 
-    curl_easy_setopt(curl, CURLOPT_URL, "sftp://51.178.31.223:13796/home/bdemarche/qrcodeReader/qrcode.png");
+    curl_easy_setopt(curl, CURLOPT_URL, url);
+
  
     /* tell it to "upload" to the URL */ 
     curl_easy_setopt(curl, CURLOPT_UPLOAD, 1L);
@@ -37,14 +47,14 @@ int upload(const char * pathQR){
     curl_easy_setopt(curl, CURLOPT_INFILESIZE_LARGE,
                      (curl_off_t)file_info.st_size);
  
-    /* enable verbose for easier tracing */ 
+    /* enable verbose for easier tracing -> print infos*/ 
     curl_easy_setopt(curl, CURLOPT_VERBOSE, 1L);
  
     res = curl_easy_perform(curl);
     /* Check for errors */ 
     if(res != CURLE_OK) {
       fprintf(stderr, "curl_easy_perform() failed: %s\n",
-              curl_easy_strerror(res));
+        curl_easy_strerror(res));
  
     }
     else {
@@ -60,6 +70,7 @@ int upload(const char * pathQR){
     }
     /* always cleanup */ 
     curl_easy_cleanup(curl);
+    free(url);
   }
   fclose(fd);
   return 0;

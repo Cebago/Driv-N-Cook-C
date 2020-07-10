@@ -1,6 +1,10 @@
 #include <string.h>
 #include <my_global.h>
 #include <mysql.h>	
+#include "prototype.h"
+
+extern conf_file_t * globalConfRead; 
+
 void finish_with_error(MYSQL *con)
 {
   fprintf(stderr, "%s\n", mysql_error(con));
@@ -19,14 +23,11 @@ MYSQL * connectDB(){
       fprintf(stderr, "mysql_init() failed\n");
       exit(1);
   }
-  
-  if (mysql_real_connect(con, "51.178.31.223", "cebago", "ESGI-cebago", 
-          "pa2a2drivncook", 13798, NULL, 0) == NULL) 
-  {
-      finish_with_error(con);
+
+  if (mysql_real_connect(con, globalConfRead->ip_sql, globalConfRead->user_sql, globalConfRead->pwd_sql, globalConfRead->table_name, globalConfRead->port_sql, NULL, 0) == NULL){ 
+        finish_with_error(con);
   }   
   mysql_set_character_set(con, "utf8");
-
 
   return con;
 }
@@ -54,11 +55,12 @@ int checkUser(char * mail){
   /* Vérification que le user n'est pas déjà en base */
   MYSQL_STMT  * req_prep_Check =  mysql_stmt_init(con);
 
-  char *checkRequest = "select idUser from USER where emailAddress = ?";
+  char * checkRequest = "select idUser from USER where emailAddress = ?";
     if (mysql_stmt_prepare(req_prep_Check, checkRequest, strlen(checkRequest)) != 0){
-    printf("Impossible de préparer la requête Check user Local\n");
+      printf("Impossible de préparer la requête Check user Local\n");
     return 0;
   }  
+
 
   MYSQL_BIND paramCheck[1];
 
@@ -87,7 +89,6 @@ int checkUser(char * mail){
   }while(!result && timer < 6 );
 
   return result;
-
 
 }
 

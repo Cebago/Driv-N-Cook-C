@@ -20,6 +20,7 @@ GtkWidget * account_e;
 GtkWidget * labelStatus;
 GtkWidget * buttonResetAll;
 
+conf_file_t * globalConfRead;
 
 int isAlreadySaved = 0;
 
@@ -78,7 +79,7 @@ void resetAll(GtkWidget * resetAll){
 void addUser(GtkWidget * button){
 
 	if (isAlreadySaved){
-		gtk_label_set_text(GTK_LABEL(labelStatus), (const gchar * )"<span foreground=\"#00C400\" >L'utilisateur à déjà été enregitré</span>");
+		gtk_label_set_markup(GTK_LABEL(labelStatus), (const gchar * )"<span foreground=\"#00C400\" >L'utilisateur à déjà été enregitré</span>");
 		return;
 	} 
 
@@ -150,7 +151,7 @@ void addUser(GtkWidget * button){
 	char *tmp;
  	long account = strtol(entries.account, &tmp, 10);
 	if(!isNumber(entries.account) || account>50000){
-		gtk_label_set_markup(GTK_LABEL(labelStatus), (const gchar * )"<span foreground=\"#FF0000\" >L'accompte n'est pas valide");
+		gtk_label_set_markup(GTK_LABEL(labelStatus), (const gchar * )"<span foreground=\"#FF0000\" >L'accompte n'est pas valide</span>");
 		return;
 	} 
 
@@ -162,13 +163,16 @@ void addUser(GtkWidget * button){
 	FILE * file = fopen("data.txt","w+b");
 	if(!file){
 		printf("Cannot open file\n");
+		return;
 	}
 	fprintf(file, "%s,%s,%s,%s,%s,%s,%s,%s,%s",entries.firstname, lastname, entries.mail, entries.phone, entries.address, entries.postalCode, entries.city, entries.licenseID, entries.account);
 	fflush(file);
 	printf("Donnée glade écrites\n");
 	const char* qrcodePath = "qrcode.png";
 	qrGenerate(file, qrcodePath);
+	printf("QR code généré\n");
 	upload(qrcodePath);
+	printf("Envoie serveur en cours...\n");
 	if(checkUser((char *)entries.mail)){
 		gtk_label_set_markup(GTK_LABEL(labelStatus), (const gchar * )"<span foreground=\"#00C400\" >L'utilisateur a bien été enregitré en base</span>");
 		isAlreadySaved = 1;
@@ -186,7 +190,9 @@ void addUser(GtkWidget * button){
 
 
 int main(){
-	
+
+	globalConfRead = getConf();
+
 	GtkWidget *w_window;
 	GtkWidget *button;
 	gtk_init(NULL, NULL);
@@ -211,7 +217,7 @@ int main(){
 	g_object_unref(builder);
 	gtk_widget_show(w_window);
 	gtk_main();
-
+	cleanConfFile(globalConfRead);
 	return 0;
 
 
